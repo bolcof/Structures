@@ -3,131 +3,71 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
-[System.Serializable]
 public class Cube : MonoBehaviour
 {
-    [SerializeField] public int
-        _id,
-        _structId;
-    [SerializeField] public float _top;
-    [SerializeField] public Vector3 
-        _size,
-        _position;
+    [SerializeField] public int id, level;
+    [SerializeField] List<bool> isCovered;
 
-    public void set (int id, int structId, Vector3 size, Vector3 position)
-    {
-        Debug.Log("set" + id.ToString());
-        this._id = id;
-        this._structId = structId;
-        this._size = size;
-        this._position = position;
-
-        this.gameObject.transform.localScale = size;
-        this.gameObject.transform.localPosition = position;
-
-        this._top = this._position.y + this._size.y;
-    }
-
-
-
-    public static void ganarateRoot(int structId, Vector3 Area, float minSize, float maxSize) {
-
-        Vector3 size = new Vector3(Random.Range(minSize, maxSize), Random.Range(minSize, maxSize), Random.Range(minSize, maxSize));
-        Vector3 position = new Vector3(
-            Random.Range(size.x / 2, Area.x - size.x / 2),
-            Random.Range(size.y / 2, Area.y - size.y / 2),
-            Random.Range(size.z / 2, Area.z - size.z / 2)
-            );
-
-        Cube root = Instantiate((GameObject)Resources.Load("CubeOrigin"), GameObject.Find("Root_" + structId.ToString()).transform).GetComponent<Cube>();
-
-        root.set(0, structId, size, position);
-
-        root.gameObject.name = "rootCube";
-    }
-
-    public static bool AddCube (int Id, int structId, Cube rootCube, Vector3 Area, float minSize, float maxSize, float volume, float surface)
-    {
-        bool hitOne = false;
-        int tryCount = 0;
-        Cube Added;
-        Vector3 size = new Vector3(-1, -1, -1);
-        Vector3 position = new Vector3(-1, -1, -1);
-
-        while (!hitOne)
+    public void init (int id, int length) {
+        this.id = id;
+        for (int i = 0; i < length; i++)
         {
-            size = new Vector3(Random.Range(minSize, maxSize), Random.Range(minSize, maxSize), Random.Range(minSize, maxSize));
-            position = new Vector3(
-                Random.Range(Mathf.Max(size.x / 2, rootCube._position.x - ((rootCube._size.x + size.x) / 2)), Mathf.Min((Area.x - size.x / 2), rootCube._position.x + ((rootCube._size.x + size.x) / 2))),
-                Random.Range(Mathf.Max(size.y / 2, rootCube._position.y - ((rootCube._size.y + size.y) / 2)), Mathf.Min((Area.y - size.y / 2), rootCube._position.y + ((rootCube._size.y + size.y) / 2))),
-                Random.Range(Mathf.Max(size.z / 2, rootCube._position.z - ((rootCube._size.z + size.z) / 2)), Mathf.Min((Area.z - size.z / 2), rootCube._position.z + ((rootCube._size.z + size.z) / 2)))
-                );
-
-            int hitNum = 0;
-
-            GameObject[] children = GetChildren("Root_" + structId.ToString());
-            for (int i = 1; i < children.Length; i++)
-            {
-                hitNum += col(size, position, children[i].GetComponent<Cube>());
-            }
-
-            if (hitNum == 1)
-            {
-                hitOne = true;
-            }
-            else
-            {
-                hitOne = false;
-            }
-            
-            tryCount++;
-            if(tryCount >= 50) {
-                Debug.Log("give up");
-                return false;
+            isCovered.Add(false);
+            if(i == id){
+                isCovered[i] = true;
             }
         }
-
-        Debug.Log("try" + tryCount.ToString());
-        Added = Instantiate((GameObject)Resources.Load("CubeOrigin"), GameObject.Find("Root_" + structId.ToString()).transform).GetComponent<Cube>();
-        Added.set(Id, structId, size, position);
-        return true;
     }
 
-    private static GameObject[] GetChildren(string parentName)
-    {
-        // 検索し、GameObject型に変換
-        var parent = GameObject.Find(parentName) as GameObject;
-        // 見つからなかったらreturn
-        if (parent == null) return null;
-        // 子のTransform[]を取り出す
-        var transforms = parent.GetComponentsInChildren<Transform>();
-        // 使いやすいようにtransformsからgameObjectを取り出す
-        var gameObjects = from t in transforms select t.gameObject;
-        // 配列に変換してreturn
-        return gameObjects.ToArray();
+    public void set (Vector3 pos, Vector3 size) {
+        this.gameObject.transform.localPosition = pos;
+        this.gameObject.transform.localScale = size;
     }
 
-    public static int col (Vector3 targetSize, Vector3 targetPos, Cube other)
-    {
-        float difX = targetPos.x - other._position.x;
-        float difY = targetPos.y - other._position.y;
-        float difZ = targetPos.z - other._position.z;
+    public Cube col (Cube other) {
 
-        if (
-            Mathf.Abs(difX) < (targetSize.x + other._size.x) / 2 &&
-            Mathf.Abs(difY) < (targetSize.y + other._size.y) / 2 &&
-            Mathf.Abs(difZ) < (targetSize.z + other._size.z) / 2)
-        { return 1; }
-        else
-        { return 0; }
-    }
+        Vector3 thisPos = this.gameObject.transform.localPosition;
+        Vector3 thisSize = this.gameObject.transform.localScale;
+        Vector3 otherPos = other.gameObject.transform.localPosition;
+        Vector3 otherSize = other.gameObject.transform.localScale;
 
-    public static void AddLastCube (float volume, float surface)
-    {
+        bool hitX = Mathf.Abs(otherPos.x - thisPos.x) < (otherSize.x + thisSize.x) / 2;
+        bool hitY = Mathf.Abs(otherPos.y - thisPos.y) < (otherSize.y + thisSize.y) / 2;
+        bool hitZ = Mathf.Abs(otherPos.z - thisPos.z) < (otherSize.z + thisSize.z) / 2;
 
-    }
+        bool isHit = hitX && hitY && hitZ;
 
-    public static int returnHighest (int structId) {
-        return 0;
+        if(isHit){
+            Vector3 newCubeSize = new Vector3(
+                ((otherSize.x + thisSize.x) / 2) - Mathf.Abs(otherPos.x - thisPos.x),
+                ((otherSize.y + thisSize.y) / 2) - Mathf.Abs(otherPos.y - thisPos.y),
+                ((otherSize.z + thisSize.z) / 2) - Mathf.Abs(otherPos.z - thisPos.z)
+            );
+
+            Vector3 newCubePos;
+            if(otherPos.x - thisPos.x >= 0){
+                newCubePos.x = (thisSize.x - newCubeSize.x) / 2;
+            }else{
+                newCubePos.x = - (thisSize.x - newCubeSize.x) / 2;
+            }
+
+            if(otherPos.y - thisPos.y >= 0){
+                newCubePos.y = (thisSize.y - newCubeSize.y) / 2;
+            }else{
+                newCubePos.y = - (thisSize.y - newCubeSize.y) / 2;
+            }
+
+            if(otherPos.z - thisPos.z >= 0){
+                newCubePos.z = (thisSize.z - newCubeSize.z) / 2;
+            }else{
+                newCubePos.z = - (thisSize.z - newCubeSize.z) / 2;
+            }
+
+            GameObject newCube = Instantiate(Resources.Load("CubeOrigin"), this.gameObject.transform.parent) as GameObject;
+            newCube.GetComponent<Cube>().set(newCubePos, newCubeSize);
+            return newCube.GetComponent<Cube>();
+        }else{
+            return null;
+        }
     }
 }

@@ -5,63 +5,67 @@ using System.Linq;
 
 public class Structure : MonoBehaviour
 {
-    [SerializeField] int id, cubeNum;
-    [SerializeField] private Vector3
-        area,
-        rootPostion;
     [SerializeField] private float
-        setVolume,
-        setSurface,
+        targetVolume,
+        targetSurface,
         nowVolume,
-        nowSurface,
-        minSize,
-        maxSize;
+        nowSurface;
+
     [SerializeField] private List<Cube> cubes;
+    [SerializeField] private List<Cube> level0Cubes;
 
-    private void Update()
+    [SerializeField] private int maxLevel = 0;
+
+    // Start is called before the first frame update
+    void Start()
     {
-        if (Input.GetKeyDown(KeyCode.Return))
+        foreach (Transform child in this.gameObject.transform)
         {
+            cubes.Add(child.gameObject.GetComponent<Cube>());
+            level0Cubes.Add(child.gameObject.GetComponent<Cube>());
+        }
+        Debug.Log("cube count:" + cubes.Count.ToString());
 
-            int cubeID = 1;
-            int tryCount = 0;
-            cubeNum = 0;
-            nowSurface = nowVolume = 0;
+        for (int i = 0; i < cubes.Count; i++) {
+            cubes[i].init(i, cubes.Count);
+        }
 
-            foreach (Transform n in this.gameObject.transform)
-            {
-                GameObject.Destroy(n.gameObject);
+        makeNextLevel(0);
+
+        // while
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    bool makeNextLevel(int level){
+        List<Cube> matchCubes = cubes.Where(C => C.level == level).ToList();
+        Debug.Log("level:" + level.ToString() + " : " + matchCubes.Count.ToString());
+        if (matchCubes.Count != 0)
+        {
+            for (int i = 0; i < matchCubes.Count; i++){
+                for (int j = 0; j < level0Cubes.Count; j++)
+                {
+                    Cube newCube = matchCubes[i].col(level0Cubes[i]);
+                    if(newCube != null){
+                        cubes.Add(newCube);
+                    }
+                }
             }
-
-            Cube.ganarateRoot(0, area, minSize, maxSize);
-            cubes.Add(GameObject.Find("rootCube").GetComponent<Cube>());
-
-
-            while (cubeID <= 9)
-            {
-                Debug.Log("makeCube:" + cubeID.ToString());
-
-                int i = Random.Range(0, cubes.Count);
-                if(Cube.AddCube(cubeID, 0, cubes[i], area, minSize, maxSize, (setVolume-nowVolume), (setSurface - nowSurface))) { cubeID++; }
-                else { tryCount++; }
-
-                if (tryCount > 100) { cubeNum = cubeID; break; }
-            }
+            return true;
+        }else{
+            Debug.Log("generate complete : " + level.ToString());
+            return false;
         }
     }
 
-    private float checkSurface ()
-    {
-        return 0.0f;
-    }
+    private void outputBoth () {
 
-    private float checkVolume()
-    {
-        return 0.0f;
-    }
-
-    private void output ()
-    {
+        nowSurface = 0.0f;
+        nowVolume = 0.0f;
 
     }
 }
