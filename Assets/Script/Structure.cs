@@ -9,13 +9,17 @@ public class Structure : MonoBehaviour
         targetVolume,
         targetSurface,
         nowVolume,
-        nowSurface;
+        nowSurface,
+        originVolume,
+        originSurface;
 
     [SerializeField] private List<Cube> cubes;
     [SerializeField] public List<Cube> level0Cubes;
 
     [SerializeField] private int maxLevel = 0;
     [SerializeField] private int count = 0;
+
+    private GameObject lastCube;
 
     // Start is called before the first frame update
     void Start()
@@ -25,7 +29,7 @@ public class Structure : MonoBehaviour
             cubes.Add(child.gameObject.GetComponent<Cube>());
             level0Cubes.Add(child.gameObject.GetComponent<Cube>());
         }
-        Debug.Log("cube count:" + cubes.Count.ToString());
+        //Debug.Log("cube count:" + cubes.Count.ToString());
 
         for (count = 0; count < cubes.Count; count++) {
             cubes[count].level0Init(count, cubes.Count);
@@ -43,18 +47,38 @@ public class Structure : MonoBehaviour
         for (int i = 0; i <= maxLevel; i++)
         {
             List<Cube> matchCubes = cubes.Where(C => C.level == i).ToList();
+
+            float debugV = 0.0f;
+            float debugS = 0.0f;
+
             for (int j = 0; j < matchCubes.Count; j++)
             {
                 int seed = i % 2 == 0 ? 1 : -1;
-                nowSurface += matchCubes[j].returnSurface() * seed;
-                nowVolume += matchCubes[j].returnVolume() * seed;
+                originSurface += matchCubes[j].returnSurface() * seed;
+                originVolume += matchCubes[j].returnVolume() * seed;
+
+                debugS += matchCubes[j].returnSurface() * seed;
+                debugV += matchCubes[j].returnVolume() * seed;
             }
+
+            Debug.Log(i.ToString() + ":Surface = " + debugS.ToString());
+            Debug.Log(i.ToString() + ":Volume  = " + debugV.ToString());
         }
+
+        nowSurface = originSurface * Mathf.Pow(this.gameObject.transform.localScale.x, 2);
+        nowVolume = originVolume * Mathf.Pow(this.gameObject.transform.localScale.x, 3);
+        makeLastPiece();
+    }
+
+    private void Update()
+    {
+        nowSurface = originSurface * Mathf.Pow(this.gameObject.transform.localScale.x, 2);
+        nowVolume = originVolume * Mathf.Pow(this.gameObject.transform.localScale.x, 3);
+        adjustLastPiece();
     }
 
     bool makeNextLevel(int level){
         List<Cube> matchCubes = cubes.Where(C => C.level == level).ToList();
-        Debug.Log("level:" + level.ToString() + " : " + matchCubes.Count.ToString());
         if (matchCubes.Count != 0)
         {
             for (int i = 0; i < matchCubes.Count; i++)
@@ -74,7 +98,7 @@ public class Structure : MonoBehaviour
             }
             return true;
         }else{
-            Debug.Log("generate complete : " + level.ToString());
+            Debug.Log("generate complete. max Level : " + level.ToString());
             maxLevel = level - 1;
             return false;
         }
@@ -106,10 +130,27 @@ public class Structure : MonoBehaviour
         return max;
     }
 
-    private void outputBoth () {
+    private void makeLastPiece () {
 
-        nowSurface = 0.0f;
-        nowVolume = 0.0f;
+        lastCube = Instantiate(Resources.Load("CubeOrigin")) as GameObject;
+        lastCube.gameObject.name = this.gameObject.name + "_LastCube";
+        adjustLastPiece();
 
+    }
+
+    private void adjustLastPiece () {
+
+        float S = targetSurface - nowSurface;
+        float V = targetVolume - nowVolume;
+
+        if (S < 0 || V < 0)
+        {
+            lastCube.transform.localScale = Vector3.zero;
+            return;
+        }
+
+        float x = V * 4 / S;
+
+        lastCube.transform.localScale = Vector3.one * x;
     }
 }
