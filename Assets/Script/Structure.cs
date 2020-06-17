@@ -67,14 +67,14 @@ public class Structure : MonoBehaviour
 
         nowSurface = originSurface * Mathf.Pow(this.gameObject.transform.localScale.x, 2);
         nowVolume = originVolume * Mathf.Pow(this.gameObject.transform.localScale.x, 3);
-        makeLastPiece();
+        //makeLastPiece();
     }
 
     private void Update()
     {
         nowSurface = originSurface * Mathf.Pow(this.gameObject.transform.localScale.x, 2);
         nowVolume = originVolume * Mathf.Pow(this.gameObject.transform.localScale.x, 3);
-        adjustLastPiece();
+        //adjustLastPiece();
     }
 
     bool makeNextLevel(int level){
